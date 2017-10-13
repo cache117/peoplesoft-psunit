@@ -1,0 +1,31 @@
+import TTS_UNITTEST:*;
+
+class PassTest extends TTS_UNITTEST:TestBase
+   method PassTest();
+   method setup();
+   method teardown();
+   method run();
+   
+end-class;
+
+method PassTest
+   %Super = create TTS_UNITTEST:TestBase("PassTest");
+   %This.Msg("PassTest: constructor");
+end-method;
+
+method run
+   /+ Extends/implements TTS_UNITTEST:TestBase.Run +/
+   %This.Msg("PassTest: Run()");
+   %This.AssertNumbersEqual(1, 1, "Must be the new math...");
+end-method;
+
+method setup
+   /+ Extends/implements TTS_UNITTEST:TestBase.Setup +/
+   %This.Msg("PassTest: Setup()");
+end-method;
+
+method teardown
+   /+ Extends/implements TTS_UNITTEST:TestBase.Teardown +/
+   %This.Msg("PassTest: Teardown()");
+end-method;
+

@@ -1,0 +1,108 @@
+import TTS_UNITTEST:*;
+import TTS_UNITTEST:Exceptions:*;
+
+class TestBaseTest extends TTS_UNITTEST:TestBase
+   method TestBaseTest();
+   
+   method Setup();
+   method Run();
+   method Teardown();
+   
+   method TestAsserts();
+   method TestMessages();
+   
+   property TTS_UNITTEST:TestBase base;
+end-class;
+
+Component string &messages;
+
+method TestBaseTest
+   %Super = create TTS_UNITTEST:TestBase("TestBaseTest");
+end-method;
+
+method Setup
+   /+ Extends/implements TTS_UNITTEST:TestBase.Setup +/
+   &base = create TTS_UNITTEST:TestBase("TestBase");
+end-method;
+
+method Run
+   /+ Extends/implements TTS_UNITTEST:TestBase.Run +/
+   %This.TestAsserts();
+   %This.TestMessages();
+   
+   &base.Setup();
+   try
+      &base.Run();
+      throw CreateException(0, 0, "Expected an exception when calling TestBase.Run()!");
+   catch Exception &e
+   end-try;
+   &base.Teardown();
+   
+end-method;
+
+method Teardown
+   /+ Extends/implements TTS_UNITTEST:TestBase.Teardown +/
+end-method;
+
+method TestAsserts
+   &base.Assert( True, "This should NOT throw an exception!");
+   
+   Local boolean &ok = True;
+   try
+      &base.Assert( False, "This should throw an exception (e1).");
+      &ok = False;
+   catch Exception &e1
+   end-try;
+   If ( Not &ok) Then
+      throw CreateException(0, 0, "Assert (false, ""..."") should've thrown an exception!");
+   End-If;
+   
+   &base.AssertNumbersEqual(1, 1, "This should NOT throw an exception!");
+   try
+      &base.AssertNumbersEqual(1, 2, "This should throw an exception (e2).");
+      &ok = False;
+   catch TTS_UNITTEST:Exceptions:AssertFailed &e2
+   end-try;
+   If ( Not &ok) Then
+      throw CreateException(0, 0, "AssertNumbersEqual (1, 2, ""..."") should've thrown an exception!");
+   End-If;
+   
+   &base.AssertNumbersDiffer(2, 9, "This should NOT throw an exception!");
+   try
+      &base.AssertNumbersDiffer(1, 1, "This should throw an exception (e3).");
+      &ok = False;
+   catch TTS_UNITTEST:Exceptions:AssertFailed &e3
+   end-try;
+   If ( Not &ok) Then
+      throw CreateException(0, 0, "AssertNumbersDiffer (1, 1, ""..."") should've thrown an exception!");
+   End-If;
+   
+   &base.AssertStringsEqual("One", "One", "This should NOT throw an exception!");
+   try
+      &base.AssertStringsEqual("One", "Two", "This should throw an exception (e4).");
+      &ok = False;
+   catch TTS_UNITTEST:Exceptions:AssertFailed &e4
+   end-try;
+   If ( Not &ok) Then
+      throw CreateException(0, 0, "AssertStringsEqual (""One"", ""Two"", ""..."") should've thrown an exception!");
+   End-If;
+   
+   &base.AssertStringsDiffer("2", "9", "This should NOT throw an exception!");
+   try
+      &base.AssertStringsDiffer("1", "1", "This should throw an exception (e5).");
+      &ok = False;
+   catch TTS_UNITTEST:Exceptions:AssertFailed &e5
+   end-try;
+   If ( Not &ok) Then
+      throw CreateException(0, 0, "AssertStringsDiffer (""1"", ""1"", ""..."") should've thrown an exception!");
+   End-If;
+end-method;
+
+method TestMessages
+   Local string &test = "ALASKsajlsdkjfasdf;";
+   
+   &base.Msg(&test);
+   Local number &ii = Find(&test, &messages);
+   %This.Assert((&ii > 0), "The message string not found in testmsgs!");
+end-method;
+

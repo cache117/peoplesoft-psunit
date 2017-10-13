@@ -1,0 +1,165 @@
+import TTS_UNITTEST:*;
+
+class InteractiveRunner
+   property string name;
+   property boolean isChunking;
+   property number chunkSize;
+   property string summary;
+   property boolean ChunksRemain readonly;
+   property number next get;
+   property number delay readonly;
+   property boolean auto_deselect;
+   
+   method InteractiveRunner(&rs_ As Rowset);
+   method StartRun() Returns string;
+   method SelectAll();
+   method DeselectAll();
+   method ContinueRun() Returns string;
+   method SetSelection();
+   method SelectTest(&nn As number);
+   method UnSelectTest(&nn As number);
+   
+private
+   
+   method RunTest(&row As Row) Returns string;
+   
+   instance number &cursor, &end;
+   instance array of number &selection;
+   instance Rowset &rs;
+   instance TTS_UNITTEST:Constants &const;
+end-class;
+
+Declare Function GetConstants PeopleCode TTS_TESTRUN_WRK.TTS_RUN_TESTS FieldFormula;
+
+method InteractiveRunner
+   /+ &rs_ as Rowset +/
+   &const = GetConstants();
+   &rs = &rs_;
+   %This.chunkSize = 1;
+   &cursor = 0;
+   &delay = 1;
+end-method;
+
+method StartRun
+   /+ Returns String +/
+   %This.SetSelection();
+   %This.summary = "";
+   &cursor = 1;
+   If (%This.isChunking) Then
+      If (%This.chunkSize < 1) Then
+         %This.chunkSize = 1;
+      End-If;
+      &delay = 0.5;
+   Else
+      &delay = 0;
+      Return %This.ContinueRun();
+   End-If;
+   &ChunksRemain = True;
+   Return "";
+end-method;
+
+method SelectTest
+   /+ &nn as Number +/
+   &rs(&nn).TTS_TESTRUN_WRK.TTS_RUN_THIS_TEST.Value = "Y";
+end-method;
+
+method UnSelectTest
+   /+ &nn as Number +/
+   &rs(&nn).TTS_TESTRUN_WRK.TTS_RUN_THIS_TEST.Value = "N";
+end-method;
+
+method SelectAll
+   Local number &ii;
+   For &ii = 1 To &rs.ActiveRowCount
+      %This.SelectTest(&ii);
+   End-For;
+end-method;
+
+method DeselectAll
+   Local number &ii;
+   For &ii = 1 To &rs.ActiveRowCount
+      %This.UnSelectTest(&ii);
+   End-For;
+end-method;
+
+method ContinueRun
+   /+ Returns String +/
+   Local string &results;
+   &end = &cursor + %This.chunkSize - 1;
+   If ( Not %This.isChunking Or
+         &end > &selection.Len) Then
+      &end = &selection.Len;
+   End-If;
+   For &cursor = &cursor To &end
+      Local Row &row = &rs(&selection [&cursor]);
+      &results = &results | %This.RunTest(&row);
+   End-For;
+   If (&end = &selection.Len) Then
+      &ChunksRemain = False;
+   End-If;
+   &delay = 2;
+   Return &results;
+end-method;
+
+method SetSelection
+   Local number &ii;
+   
+   &selection = CreateArrayRept(&ii, 0);
+   For &ii = 1 To &rs.ActiveRowCount
+      If (&rs(&ii).TTS_TESTRUN_WRK.TTS_RUN_THIS_TEST.Value = "Y") Then
+         &selection.Push(&ii);
+      End-If;
+   End-For;
+   If (&selection.Len < 1) Then
+      throw CreateException(0, 0, "No tests selected!");
+   End-If;
+end-method;
+
+get next
+   /+ Returns Number +/
+   If (%This.ChunksRemain) Then
+      Return &selection [&cursor];
+   Else
+      Return 0;
+   End-If;
+end-get;
+
+method RunTest
+   /+ &row as Row +/
+   /+ Returns String +/
+   Local TTS_UNITTEST:TestBase &test;
+   Local string &results;
+   Local boolean &teardownNeeded = False;
+   try
+      &test = CreateObject(&row.TTS_TEST_CLASS.TTS_CLASS_NAME.Value) As TTS_UNITTEST:TestBase;
+      /* We want teardown to run even if setup fails, so set flag first */
+      &teardownNeeded = True;
+      &test.Setup();
+      &test.Run();
+      /* Reset teardown var before teardown just in case teardown fails.
+       * No reason to run Teardown later if it ran here and failed. */
+      &teardownNeeded = False;
+      &test.Teardown();
+      &row.TTS_TESTRUN_WRK.TTS_RUN_STATUS.Value = &test.PASSED;
+      If (%This.auto_deselect) Then
+         &row.TTS_TESTRUN_WRK.TTS_RUN_THIS_TEST.Value = "N";
+      End-If;
+      If (%This.summary <> &const.TEST_STATUS_FAILED) Then
+         %This.summary = &const.TEST_STATUS_PASSED;
+      End-If;
+   catch Exception &e
+      &results = &results | "Test [" | &row.TTS_TEST_CLASS.TTS_CLASS_NAME.Value | "] failed!" | Char(13) | &e.ToString() | Char(13) | "--------------------------" | Char(13);
+      %This.summary = &const.TEST_STATUS_FAILED;
+      &row.TTS_TESTRUN_WRK.TTS_RUN_STATUS.Value = &const.TEST_STATUS_FAILED;
+      %This.summary = &const.TEST_STATUS_FAILED;
+   end-try;
+   If (&teardownNeeded) Then
+      try
+         &test.Teardown();
+      catch Exception &e2
+         rem Teardown failed;
+      end-try;
+   End-If;
+   Return &results;
+end-method;
+

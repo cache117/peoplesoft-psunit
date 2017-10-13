@@ -1,0 +1,14 @@
+class AssertFailed extends Exception
+   method AssertFailed(&msg_in As string);
+   
+end-class;
+
+method AssertFailed
+   /+ &msg_in as String +/
+   
+   Local string &msg = "Assertion failed: " | &msg_in | Char(13);
+   
+   %Super = CreateException(0, 0, &msg);
+   
+end-method;
+

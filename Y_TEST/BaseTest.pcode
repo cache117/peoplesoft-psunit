@@ -1,0 +1,242 @@
+import TTS_UNITTEST:TestBase;
+import TTS_UNITTEST:Exceptions:AssertFailed;
+
+/* Basic Test-Class structure 
+import Y_TEST:BaseTest;
+
+class Test-Class extends Y_TEST:BaseTest
+   method Test-Class();
+   method RunHook();
+private
+   rem tests;
+end-class;
+
+method Test-Class
+   %Super = create Y_TEST:BaseTest("Test-Class");
+end-method;
+
+method RunHook
+   /+ Extends/implements Y_TEST:BaseTest.Run +/
+   <run test methods>
+   %This.tests = <number-of-tests-run>;
+end-method;
+*/
+
+/**
+  * A PSUnit BaseTest wrapper that adds additional functionality to PSUnit. This introduces changes such 
+  * as the ability to count the number of test methods run, as well as the number of assertions made in 
+  * the tests.
+  *
+  * @author Cache Staheli - Brigham Young University
+  */
+class BaseTest extends TTS_UNITTEST:TestBase
+   method Run();
+   method RunHook() abstract;
+   method BaseTest(&_unitTestName As string);
+   method Fail(&failureReason As string);
+   method FailWithException(&exception As Exception);
+   method Pass(&discardedReason As string);
+   method AssertTrue(&condition As boolean, &failureMessage As string);
+   method AssertFalse(&condition As boolean, &failureMessage As string);
+   method AssertExists(&value As any, &onFail As string);
+   method AssertStringsEqual(&expected As string, &actual As string, &onFail As string);
+   method AssertStringsDiffer(&expected As string, &actual As string, &onFail As string);
+   method AssertNumbersEqual(&expected As number, &actual As number, &onFail As string);
+   method AssertNumbersDiffer(&expected As number, &actual As number, &onFail As string);
+   method AssertDatesEqual(&expected As date, &actual As date, &onFail As string);
+   method AssertDatesDiffer(&expected As date, &actual As date, &onFail As string);
+protected
+   method testCaseSucceeded();
+   method testCaseFailed(&reason As string);
+   method testEquals(&first As any, &second As any, &useSimpleEquals As boolean) Returns boolean;
+   method getfailureReasons() Returns string;
+   property number testCasesFailed;
+   property number testCasesSucceeded;
+   property number tests;
+private
+   instance array of string &failureReasons;
+end-class;
+
+method BaseTest
+   /+ &_unitTestName as String +/
+   &failureReasons = CreateArrayRept("", 0);
+   %Super = create TTS_UNITTEST:TestBase(&_unitTestName);
+end-method;
+
+method Run
+   /+ Extends/implements TTS_UNITTEST:TestBase.Run +/
+   %This.RunHook();
+   %This.Msg(%This.UnitTestName);
+   %This.Msg("Tests Run: " | %This.tests | ", Total Test Cases Succeeded: " | %This.testCasesSucceeded | ", Total Test Cases Failed: " | %This.testCasesFailed);
+   %This.Msg(%This.getfailureReasons());
+end-method;
+
+method testCaseSucceeded
+   &testCasesSucceeded = &testCasesSucceeded + 1;
+end-method;
+
+method testCaseFailed
+   /+ &reason as String +/
+   &testCasesFailed = &testCasesFailed + 1;
+   &failureReasons.Push(&reason);
+end-method;
+
+method getfailureReasons
+   /+ Returns String +/
+   If &failureReasons.Len > 0 Then
+      Local string &allReasons = "1. " | &failureReasons [1];
+      Local number &i;
+      For &i = 2 To &failureReasons.Len
+         &allReasons = &allReasons | Char(10) | &i | ". " | &failureReasons [&i];
+      End-For;
+      Return "Failure Reasons: " | Char(13) | &allReasons;
+   End-If;
+   Return "";
+end-method;
+
+/**
+  * This method determines if two objects are equal. If they are simple objects that can be compared with the equals sign, 
+  * this is the same as calling `Return (&first = &second)`. If they are marked as non simple by the third parameter,
+  * the method `.equals` will be called on the first to determine if it is the same.
+  */
+method testEquals
+   /+ &first as Any, +/
+   /+ &second as Any, +/
+   /+ &useSimpleEquals as Boolean +/
+   /+ Returns Boolean +/
+   If &useSimpleEquals Then
+      Return (&first = &second);
+   Else
+      Return (&first.equals(&second));
+   End-If;
+end-method;
+
+/**
+  * If the given condition is true, a test will succeed. Otherwise, it will fail with the given message.
+  */
+method AssertTrue
+   /+ &condition as Boolean, +/
+   /+ &failureMessage as String +/
+   try
+      %Super.Assert(&condition, &failureMessage);
+      %This.testCaseSucceeded();
+   catch TTS_UNITTEST:Exceptions:AssertFailed &e
+      %This.testCaseFailed(&failureMessage);
+      throw &e;
+   end-try;
+end-method;
+
+method AssertFalse
+   /+ &condition as Boolean, +/
+   /+ &failureMessage as String +/
+   /+ Extends/implements TTS_UNITTEST:TestBase.AssertFalse +/
+   %This.AssertTrue(( Not &condition), &failureMessage);
+end-method;
+
+method AssertExists
+   /+ &value as Any, +/
+   /+ &onFail as String +/
+   %This.AssertTrue(All(&value), &onFail);
+end-method;
+
+method AssertStringsEqual
+   /+ &expected as String, +/
+   /+ &actual as String, +/
+   /+ &onFail as String +/
+   /+ Extends/implements TTS_UNITTEST:TestBase.AssertStringsEqual +/
+   try
+      %Super.AssertStringsEqual(&expected, &actual, &onFail);
+      %This.testCaseSucceeded();
+   catch TTS_UNITTEST:Exceptions:AssertFailed &e
+      %This.testCaseFailed(&onFail);
+      throw &e;
+   end-try;
+end-method;
+
+method AssertStringsDiffer
+   /+ &expected as String, +/
+   /+ &actual as String, +/
+   /+ &onFail as String +/
+   /+ Extends/implements TTS_UNITTEST:TestBase.AssertStringsDiffer +/
+   try
+      %Super.AssertStringsDiffer(&expected, &actual, &onFail);
+      %This.testCaseSucceeded();
+   catch TTS_UNITTEST:Exceptions:AssertFailed &e
+      %This.testCaseFailed(&onFail);
+      throw &e;
+   end-try;
+end-method;
+
+method AssertNumbersEqual
+   /+ &expected as Number, +/
+   /+ &actual as Number, +/
+   /+ &onFail as String +/
+   /+ Extends/implements TTS_UNITTEST:TestBase.AssertNumbersEqual +/
+   try
+      %Super.AssertNumbersEqual(&expected, &actual, &onFail);
+      %This.testCaseSucceeded();
+   catch TTS_UNITTEST:Exceptions:AssertFailed &e
+      %This.testCaseFailed(&onFail);
+      throw &e;
+   end-try;
+end-method;
+
+method AssertNumbersDiffer
+   /+ &expected as Number, +/
+   /+ &actual as Number, +/
+   /+ &onFail as String +/
+   /+ Extends/implements TTS_UNITTEST:TestBase.AssertNumbersDiffer +/
+   try
+      %Super.AssertNumbersDiffer(&expected, &actual, &onFail);
+      %This.testCaseSucceeded();
+   catch TTS_UNITTEST:Exceptions:AssertFailed &e
+      %This.testCaseFailed(&onFail);
+      throw &e;
+   end-try;
+end-method;
+
+method AssertDatesEqual
+   /+ &expected as Date, +/
+   /+ &actual as Date, +/
+   /+ &onFail as String +/
+   /+ Extends/implements TTS_UNITTEST:TestBase.AssertDatesEqual +/
+   try
+      %Super.AssertDatesEqual(&expected, &actual, &onFail);
+      %This.testCaseSucceeded();
+   catch TTS_UNITTEST:Exceptions:AssertFailed &e
+      %This.testCaseFailed(&onFail);
+      throw &e;
+   end-try;
+end-method;
+
+method AssertDatesDiffer
+   /+ &expected as Date, +/
+   /+ &actual as Date, +/
+   /+ &onFail as String +/
+   /+ Extends/implements TTS_UNITTEST:TestBase.AssertDatesDiffer +/
+   try
+      %Super.AssertDatesDiffer(&expected, &actual, &onFail);
+      %This.testCaseSucceeded();
+   catch TTS_UNITTEST:Exceptions:AssertFailed &e
+      %This.testCaseFailed(&onFail);
+      throw &e;
+   end-try;
+end-method;
+
+method Fail
+   /+ &failureReason as String +/
+   %This.testCaseFailed(&failureReason);
+   throw create TTS_UNITTEST:Exceptions:AssertFailed(&failureReason);
+end-method;
+
+method FailWithException
+   /+ &exception as Exception +/
+   %This.testCaseFailed(&exception.ToString());
+   throw create TTS_UNITTEST:Exceptions:AssertFailed("Exception: " | &exception.ToString());
+end-method;
+
+method Pass
+   /+ &discardedReason as String +/
+   %This.testCaseSucceeded();
+end-method;
+

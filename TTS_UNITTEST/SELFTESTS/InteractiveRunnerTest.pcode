@@ -1,0 +1,167 @@
+import TTS_UNITTEST:*;
+
+class InteractiveRunnerTest extends TTS_UNITTEST:TestBase
+   method InteractiveRunnerTest();
+   
+   method Setup();
+   method Run();
+   
+   property Rowset rs;
+   property TTS_UNITTEST:InteractiveRunner myRunner;
+   
+   method Select(&n As number);
+   method Reset();
+   method DisplayMessages(&true_is_on As boolean);
+   method Chunking(&true_is_on As boolean);
+end-class;
+
+Component TTS_UNITTEST:Controller &controller;
+Component string &messages;
+
+method InteractiveRunnerTest
+   %Super = create TTS_UNITTEST:TestBase("InteractiveRunnerTest");
+end-method;
+
+method Setup
+   /+ Extends/implements TTS_UNITTEST:TestBase.Setup +/
+   &rs = CreateRowset(&controller.suiteRS);
+   &rs(1).TTS_TEST_CLASS.TTS_CLASS_NAME.Value = "TTS_UNITTEST:Examples:FailTest";
+   &rs.InsertRow(1);
+   &rs(2).TTS_TEST_CLASS.TTS_CLASS_NAME.Value = "TTS_UNITTEST:Examples:PassTest";
+   &myRunner = create TTS_UNITTEST:InteractiveRunner(&rs);
+end-method;
+
+method Run
+   /+ Extends/implements TTS_UNITTEST:TestBase.Run +/
+   Return;
+   &myRunner.DeselectAll();
+   Local string &tmp;
+   try
+      &tmp = &myRunner.StartRun();
+      throw CreateException(0, 0, "Should have thrown an exception!");
+   catch Exception &e
+      If (Find("No tests selected", &e.ToString()) < 1) Then
+         throw &e;
+      End-If;
+   end-try;
+   
+   %This.Select(2);
+   &tmp = &myRunner.StartRun();
+   %This.AssertStringsEqual("", &tmp, "Start run shouldn't return any results when not chunking!");
+   &tmp = &myRunner.ContinueRun();
+   %This.AssertStringsEqual("Passed", &myRunner.summary, "PassTest should've passed!");
+   
+   &myRunner.DeselectAll();
+   %This.Select(1);
+   &tmp = &myRunner.StartRun();
+   &tmp = &myRunner.ContinueRun();
+   %This.AssertStringsEqual("Failed", &myRunner.summary, "FailTest should've failed!");
+   
+   &myRunner.SelectAll();
+   &myRunner.isChunking = False;
+   &tmp = &myRunner.StartRun();
+   %This.AssertStringsEqual("Failed", &myRunner.summary, "FailTest should've failed!");
+   Local string &error = "Test [TTS_UNITTEST:Examples:FailTest] failed!";
+   Local array of string &messages1 = CreateArrayRept("", 0);
+   &messages1.Push("FailTest: constructor()");
+   &messages1.Push("FailTest: Setup()");
+   &messages1.Push("FailTest: Run()");
+   &messages1.Push("FailTest: Teardown()");
+   &messages1.Push("PassTest: constructor");
+   &messages1.Push("PassTest: Setup()");
+   &messages1.Push("PassTest: Run()");
+   &messages1.Push("PassTest: Teardown()");
+   %This.Assert((Find(&error, &tmp) > 0), "Error from FailTest not found!");
+   Local number &ii;
+   For &ii = 1 To &messages1.Len
+      %This.Assert((Find(&messages1 [&ii], &messages) > 0), "Message '" | &messages1 [&ii] | "' expected, but not found!");
+   End-For;
+   
+   /*********************************************************************/
+   /*Test to make sure AssertRowsetValuesEqual method is working*/
+   /*********************************************************************/
+   
+   /*Test for exception when rs1 has more rows than rs2*/
+   Local Rowset &rs1 = CreateRowset(Record.TTS_TEST_SUITES);
+   Local Rowset &rs2 = CreateRowset(Record.TTS_TEST_SUITES);
+   &rs1(1).TTS_TEST_SUITES.TTS_TEST_SUITE.Value = "Value1";
+   &rs1.InsertRow(1);
+   &rs1(2).TTS_TEST_SUITES.TTS_TEST_SUITE.Value = "Value2";
+   &rs2(1).TTS_TEST_SUITES.TTS_TEST_SUITE.Value = "Value1";
+   try
+      %This.AssertRowsetValuesEqual(&rs1, &rs2, "rowsets are not equal");
+   catch Exception &f
+      Local Exception &tempException = &f;
+   end-try;
+   %This.Assert((&tempException <> Null), "assertRowsetValuesEqual not throwing exception when rowset2 has fewer rows than rowset 1");
+   &tempException = Null;
+   
+   /*Test for exception when rs2 has more rows than rs1*/
+   &rs1 = CreateRowset(Record.TTS_TEST_SUITES);
+   &rs2 = CreateRowset(Record.TTS_TEST_SUITES);
+   &rs1(1).TTS_TEST_SUITES.TTS_TEST_SUITE.Value = "Value1";
+   &rs2(1).TTS_TEST_SUITES.TTS_TEST_SUITE.Value = "Value1";
+   &rs2.InsertRow(1);
+   &rs2(2).TTS_TEST_SUITES.TTS_TEST_SUITE.Value = "Value2";
+   try
+      %This.AssertRowsetValuesEqual(&rs1, &rs2, "rowsets are not equal");
+   catch Exception &g
+      &tempException = &g;
+   end-try;
+   %This.Assert((&tempException <> Null), "assertRowsetValuesEqual not throwing exception when rowset1 has fewer rows than rowset 2");
+   &tempException = Null;
+   
+   /*Test when rowsets are comprised of record with different names*/
+   &rs1 = CreateRowset(Record.TTS_TEST_SUITES);
+   &rs2 = CreateRowset(Record.TTS_TEST_CLASS);
+   try
+      %This.AssertRowsetValuesEqual(&rs1, &rs2, "rowsets are not equal");
+   catch Exception &h
+      &tempException = &h;
+   end-try;
+   %This.Assert((&tempException <> Null), "assertRowsetValuesEqual not throwing exception when rowset has records of different names");
+   &tempException = Null;
+   
+   /*Test for exception when rec.field values are different*/
+   &rs1 = CreateRowset(Record.TTS_TEST_SUITES);
+   &rs2 = CreateRowset(Record.TTS_TEST_SUITES);
+   
+   &rs1(1).TTS_TEST_SUITES.TTS_TEST_SUITE.Value = "Value1";
+   &rs1.InsertRow(1);
+   &rs1(2).TTS_TEST_SUITES.TTS_TEST_SUITE.Value = "Value2";
+   
+   &rs2(1).TTS_TEST_SUITES.TTS_TEST_SUITE.Value = "Value1";
+   &rs2.InsertRow(1);
+   &rs2(2).TTS_TEST_SUITES.TTS_TEST_SUITE.Value = "Value3";
+   try
+      %This.AssertRowsetValuesEqual(&rs1, &rs2, "rowsets are not equal");
+   catch Exception &i
+      &tempException = &i;
+   end-try;
+   %This.Assert((&tempException <> Null), "assertRowsetValuesEqual not throwing exception when rowsets have same number of rows, but different rec.field values");
+   &tempException = Null;
+   
+end-method;
+
+method Select
+   /+ &n as Number +/
+   &rs(&n).TTS_TESTRUN_WRK.TTS_RUN_THIS_TEST.Value = "Y";
+end-method;
+
+method Reset
+   Local number &ii = &rs.ActiveRowCount;
+   While &ii > 0
+      Local Record &wrk = &rs(&ii).TTS_TESTRUN_WRK;
+      &wrk.TTS_RUN_THIS_TEST.Value = "";
+      &wrk.TTS_RUN_STATUS.Value = "";
+   End-While;
+end-method;
+
+method DisplayMessages
+   /+ &true_is_on as Boolean +/
+end-method;
+
+method Chunking
+   /+ &true_is_on as Boolean +/
+end-method;
+

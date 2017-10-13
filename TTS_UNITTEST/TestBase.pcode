@@ -1,0 +1,217 @@
+import TTS_UNITTEST:Exceptions:*;
+import TTS_UNITTEST:Constants;
+
+/** This is the base class which developers must extend in order to code their test(s). 
+    The methods to be overridden are Setup(), Run() and Teardown().  The test runners always
+    call these methods in that order for each test class.  Finally, the PSUnit test runner 
+    attempts to call Teardown() will be called even when there are errors; it does not always
+    succeed, but that's another story.
+
+    In addition, there are the helper methods for asserting various invariant conditions.  
+    The pattern is: Assert (&condition_which_must_be_true, "The expected condition was not met!");
+    In other words, the first argument to Assert() is a condition which you expect to be true.
+    The second is an error message to print if the condition is not met.  The other Assert*()
+    methods are more syntactic sugar. */
+
+class TestBase
+   property string UnitTestName readonly;
+   property string status;
+   property string PASSED readonly;
+   property string FAILED readonly;
+   property string NOT_RUN readonly;
+   
+   /** The constructor.  Developers should pass in a test name as the sole
+    argument.  For now, PSUnit does nothing with the name, but the plan was to use it to do some
+    nifty error tracking, etc. */
+   method TestBase(&UnitTestName_in As string);
+   
+   /** The first method of the test class to be called during a run. */
+   method Setup();
+   /** The last method of the test class to be called during a run.  The framework tries to call this
+    method even after an error.  Due to inconsistent exception handling by the PeopleCode runtime,
+    a PeopleCode "catch" statement does not catch all exceptions, and so PSUnit cannot guarantee this.
+    Examples of untrappable errors are calls to the Error() builtin, SQL errors, PeopleCode compile 
+    errors, etc. */
+   method Teardown();
+   /** The method which MUST be overriden to implement the actual test developers want to write. 
+     */
+   method Run() abstract;
+   
+   /** The first argument must be a boolean expression, which should evaluate to true.  If false, PSUnit 
+    throws an exception to indicate that the test failed.  The test runner catches the exception, marks
+    the test as having failed, and continues on to the next test. */
+   method Assert(&statement As boolean, &onFail As string);
+   method AssertFalse(&statement As boolean, &onFail As string);
+   method AssertStringsEqual(&expected As string, &actual As string, &onFail As string);
+   method AssertStringsDiffer(&expected As string, &actual As string, &onFail As string);
+   method AssertNumbersEqual(&expected As number, &actual As number, &onFail As string);
+   method AssertNumbersDiffer(&expected As number, &actual As number, &onFail As string);
+   method AssertDatesEqual(&expected As date, &actual As date, &onFail As string);
+   method AssertDatesDiffer(&expected As date, &actual As date, &onFail As string);
+   method AssertRowsetValuesEqual(&expected As Rowset, &actual As Rowset, &onFail As string);
+   
+   method Msg(&msg As string);
+   method HTMLMsg(&htmlMsg As string);
+   property TTS_UNITTEST:Constants const;
+end-class;
+
+Declare Function GetConstants PeopleCode TTS_TESTRUN_WRK.TTS_RUN_TESTS FieldFormula;
+Component string &messages;
+Component string &html;
+
+method Assert
+   /+ &statement as Boolean, +/
+   /+ &onFail as String +/
+   
+   If ( Not (&statement)) Then
+      throw create TTS_UNITTEST:Exceptions:AssertFailed(&onFail);
+   End-If;
+   
+end-method;
+
+method AssertFalse
+   /+ &statement as Boolean, +/
+   /+ &onFail as String +/
+   
+   %This.Assert(( Not &statement), &onFail);
+   
+end-method;
+
+method AssertStringsEqual
+   /+ &expected as String, +/
+   /+ &actual as String, +/
+   /+ &onFail as String +/
+   
+   If (&expected <> &actual) Then
+      Local string &msg = &expected | " <> " | &actual | "! " | &onFail;
+      throw create TTS_UNITTEST:Exceptions:AssertFailed(&msg);
+   End-If;
+   
+end-method;
+
+method AssertStringsDiffer
+   /+ &expected as String, +/
+   /+ &actual as String, +/
+   /+ &onFail as String +/
+   
+   If (&expected = &actual) Then
+      Local string &msg = &expected | " = " | &actual | "! " | &onFail;
+      throw create TTS_UNITTEST:Exceptions:AssertFailed(&msg);
+   End-If;
+   
+end-method;
+
+method AssertNumbersEqual
+   /+ &expected as Number, +/
+   /+ &actual as Number, +/
+   /+ &onFail as String +/
+   
+   If (&expected <> &actual) Then
+      Local string &msg = String(&expected) | " <> " | String(&actual) | "! " | &onFail;
+      throw create TTS_UNITTEST:Exceptions:AssertFailed(&msg);
+   End-If;
+   
+end-method;
+
+method AssertNumbersDiffer
+   /+ &expected as Number, +/
+   /+ &actual as Number, +/
+   /+ &onFail as String +/
+   
+   If (&expected = &actual) Then
+      Local string &msg = String(&expected) | " = " | String(&actual) | "! " | &onFail;
+      throw create TTS_UNITTEST:Exceptions:AssertFailed(&msg);
+   End-If;
+   
+end-method;
+
+method AssertDatesEqual
+   /+ &expected as Date, +/
+   /+ &actual as Date, +/
+   /+ &onFail as String +/
+   If (&expected <> &actual) Then
+      Local string &msg = String(&expected) | " <> " | String(&actual) | "! " | &onFail;
+      throw create TTS_UNITTEST:Exceptions:AssertFailed(&msg);
+   End-If;
+end-method;
+
+method AssertDatesDiffer
+   /+ &expected as Date, +/
+   /+ &actual as Date, +/
+   /+ &onFail as String +/
+   If (&expected = &actual) Then
+      Local string &msg = String(&expected) | " = " | String(&actual) | "! " | &onFail;
+      throw create TTS_UNITTEST:Exceptions:AssertFailed(&msg);
+   End-If;
+end-method;
+
+method TestBase
+   /+ &UnitTestName_in as String +/
+   &const = GetConstants();
+   &UnitTestName = &UnitTestName_in;
+   &PASSED = &const.TEST_STATUS_PASSED;
+   &FAILED = &const.TEST_STATUS_FAILED;
+   &NOT_RUN = "";
+   
+end-method;
+
+method Setup
+end-method;
+
+method Teardown
+end-method;
+
+
+method Msg
+   /+ &msg as String +/
+   &messages = &messages | &msg | Char(13);
+end-method;
+
+
+method HTMLMsg
+   /+ &htmlMsg as String +/
+   &html = &html | &htmlMsg | "<BR>" | Char(13);
+end-method;
+
+method AssertRowsetValuesEqual
+   /+ &expected as Rowset, +/
+   /+ &actual as Rowset, +/
+   /+ &onFail as String +/
+   Local number &rowCount;
+   Local number &recordCount;
+   Local number &fieldCount;
+   Local string &expectedRecName;
+   Local string &actualRecName;
+   Local string &msg;
+   Local Record &expectedRec;
+   Local Record &actualRec;
+   
+   If &expected.ActiveRowCount < &actual.ActiveRowCount Then
+      throw create TTS_UNITTEST:Exceptions:AssertFailed("Rowset 1 has fewer rows than Rowset 2");
+   End-If;
+   
+   If &expected.ActiveRowCount > &actual.ActiveRowCount Then
+      throw create TTS_UNITTEST:Exceptions:AssertFailed("Rowset 2 has fewer rows than rowset 1");
+   End-If;
+   
+   For &rowCount = 1 To &expected.ActiveRowCount
+      For &recordCount = 1 To &expected(&rowCount).RecordCount
+         &expectedRecName = &expected(&rowCount).GetRecord(&recordCount).Name;
+         &actualRecName = &actual(&rowCount).GetRecord(&recordCount).Name;
+         If &expectedRecName <> &actualRecName Then
+            &msg = "Rowsets are comprised of different records.  " | &expectedRecName | " <> " | &actualRecName;
+            throw create TTS_UNITTEST:Exceptions:AssertFailed(&msg | &onFail);
+         End-If;
+         
+         &expectedRec = &expected(&rowCount).GetRecord(&recordCount);
+         &actualRec = &actual(&rowCount).GetRecord(&recordCount);
+         For &fieldCount = 1 To &expectedRec.FieldCount
+            If &expectedRec.GetField(&fieldCount).Value <> &actualRec.GetField(@("Field." | &expectedRec.GetField(&fieldCount).Name)).Value Then
+               &msg = "Row " | &rowCount | ", Record " | &expected.DBRecordName | ", Field " | &expectedRec.GetField(&fieldCount).Name | " values do not match!  " | &expectedRec.GetField(&fieldCount).Value | " <> " | &actualRec.GetField(@("Field." | &expectedRec.GetField(&fieldCount).Name)).Value;
+               throw create TTS_UNITTEST:Exceptions:AssertFailed(&msg | &onFail);
+            End-If;
+         End-For;
+      End-For;
+   End-For;
+end-method;
+

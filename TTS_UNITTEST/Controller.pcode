@@ -1,0 +1,145 @@
+import TTS_UNITTEST:*;
+
+class Controller
+   property TTS_UNITTEST:InteractiveRunner runner;
+   property Rowset suiteRS;
+   property Record workRec;
+   property string auto_deselect get set;
+   
+   method Controller();
+   method UpdateDisplay(&results As string);
+   method DoSelectNone();
+   method DoSelectAll();
+   method DoContinueRun();
+   method DoRunTests();
+   method DoPostBuild(&suiteRS_ As Rowset, &workRec_ As Record);
+   method DoChunking();
+   method SelectTest(&nn As number);
+   
+private
+   instance TTS_UNITTEST:Constants &const;
+end-class;
+
+Declare Function GetConstants PeopleCode TTS_TESTRUN_WRK.TTS_RUN_TESTS FieldFormula;
+Component string &messages;
+Component string &html;
+
+method Controller
+   &const = GetConstants();
+end-method;
+
+method UpdateDisplay
+   /+ &results as String +/
+   &workRec.TTS_TEST_SUMMARY.Value = &runner.summary;
+   If (&workRec.TTS_TEST_SUMMARY.Value = &const.TEST_STATUS_FAILED) Then
+      &workRec.TTS_TEST_SUMMARY.Style = "PSERROR";
+   Else
+      &workRec.TTS_TEST_SUMMARY.Style = "PSLONGEDITBOX";
+   End-If;
+   
+   &workRec.TTS_TEST_MSGS.Value = &messages | Char(13);
+   
+   &workRec.TTS_TEST_RESULTS.Value = &workRec.TTS_TEST_RESULTS.Value | &results;
+   
+   &workRec.TTS_HTMLAREA.Value = "";
+   &workRec.TTS_HTML_MSG.Value = "<table><tr>" | &html | "</tr></table>";
+   If (&runner.ChunksRemain) Then
+      Local number &total = &runner.delay * 2500;
+      &workRec.TTS_HTMLAREA.Value = "<script language='JavaScript'>my=setTimeout(""%SubmitScriptName(%FormName,'AGAIN')""," | String(&total) | ");</script>";
+   End-If;
+   
+   If &runner.next > 0 Then
+      &workRec.TTS_RUN_TESTS.Label = "Now Running: " | &runner.next;
+   Else
+      &workRec.TTS_RUN_TESTS.Label = &workRec.TTS_RUN_TESTS.GetLongLabel("RUN_TESTS");
+   End-If;
+   &workRec.TTS_TEST_SUMMARY.Visible = True;
+   
+   Local number &ii;
+   For &ii = 1 To &suiteRS.ActiveRowCount
+      Local Field &fld = &suiteRS(&ii).TTS_TESTRUN_WRK.TTS_RUN_STATUS;
+      If (&fld.Value = &const.TEST_STATUS_FAILED) Then
+         &fld.Style = "PSERROR";
+      Else
+         &fld.Style = "PSNORMAL";
+      End-If;
+   End-For;
+end-method;
+
+
+method DoSelectNone
+   &runner.DeselectAll();
+end-method;
+
+
+method DoSelectAll
+   &runner.SelectAll();
+end-method;
+
+method DoContinueRun
+   Local string &results;
+   &results = &runner.ContinueRun();
+   
+   %This.UpdateDisplay(&results);
+   
+end-method;
+
+method DoRunTests
+   Local string &results;
+   &messages = "";
+   &html = "";
+   &workRec.TTS_TEST_RESULTS.Value = "";
+   If (&workRec.TTS_CHUNKING.Value = "Y") Then
+      &runner.chunkSize = &workRec.TTS_CHUNK_SIZE.Value;
+      &runner.isChunking = True;
+   Else
+      &runner.isChunking = False;
+   End-If;
+   
+   &results = &runner.StartRun();
+   
+   %This.UpdateDisplay(&results);
+   If (%Page <> Page.TTS_PSUNIT_MSG_PG) Then
+      TransferPage(Page.TTS_PSUNIT_MSG_PG);
+   End-If;
+end-method;
+
+method DoPostBuild
+   /+ &suiteRS_ as Rowset, +/
+   /+ &workRec_ as Record +/
+   &suiteRS = &suiteRS_;
+   &runner = create TTS_UNITTEST:InteractiveRunner(&suiteRS);
+   &workRec = &workRec_;
+   &workRec.TTS_TEST_SUMMARY.Visible = False;
+end-method;
+
+method DoChunking
+end-method;
+
+method SelectTest
+   /+ &nn as Number +/
+   &runner.SelectTest(&nn);
+end-method;
+
+get auto_deselect
+   /+ Returns String +/
+   If (&runner <> Null) Then
+      If (&runner.auto_deselect) Then
+         Return "Y";
+      Else
+         Return "N";
+      End-If;
+   End-If;
+   Return "N";
+end-get;
+
+set auto_deselect
+   /+ &NewValue as String +/
+   Local string &tmp = &NewValue;
+   If (&tmp = "Y") Then
+      &runner.auto_deselect = True;
+   Else
+      &runner.auto_deselect = False;
+   End-If;
+end-set;
+

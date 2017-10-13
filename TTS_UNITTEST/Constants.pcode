@@ -1,0 +1,14 @@
+class Constants
+   property string PSUNIT_RELEASE_NUMBER readonly;
+   property string TEST_STATUS_FAILED readonly;
+   property string TEST_STATUS_PASSED readonly;
+   
+   method Constants();
+end-class;
+
+method Constants
+   &PSUNIT_RELEASE_NUMBER = "1.1";
+   &TEST_STATUS_FAILED = "FAILED";
+   &TEST_STATUS_PASSED = "Passed";
+end-method;
+

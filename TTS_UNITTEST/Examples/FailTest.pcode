@@ -1,0 +1,31 @@
+import TTS_UNITTEST:*;
+
+class FailTest extends TTS_UNITTEST:TestBase
+   method FailTest();
+   method run();
+   
+   method Setup();
+   method Teardown();
+end-class;
+
+method FailTest
+   %Super = create TTS_UNITTEST:TestBase("FailTest");
+   %This.Msg("FailTest: constructor()");
+end-method;
+
+method run
+   /+ Extends/implements TTS_UNITTEST:TestBase.Run +/
+   %This.Msg("FailTest: Run()");
+   %This.AssertNumbersEqual(1, 2, "As expected, 1 <> 2");
+end-method;
+
+method Setup
+   /+ Extends/implements TTS_UNITTEST:TestBase.Setup +/
+   %This.Msg("FailTest: Setup()");
+end-method;
+
+method Teardown
+   /+ Extends/implements TTS_UNITTEST:TestBase.Teardown +/
+   %This.Msg("FailTest: Teardown()");
+end-method;
+
