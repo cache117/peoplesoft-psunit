@@ -1,9 +1,9 @@
 # PSUnit - Unit test framework for PeopleSoft
 
 ## Disclaimer
-PSUnit is taken directly from Oracle, with a few modifications. The original PSUnit project can be obtained from the [download link](http://blogs.oracle.com/peopletools/resource/TTS_UNIT.zip) on the Oracle Blog.
+PSUnit is taken directly from Oracle, with a few modifications. You used to be able to get the the original PSUnit project from the [download link](http://blogs.oracle.com/peopletools/resource/TTS_UNIT.zip) on the Oracle Blog, but it has since disappeared (404) in all of the places I have looked for it.
 
-The copyright for PSUnit is (probably) held by Jim Marion/David Bain of Oracle, although that was years ago, so it might have changed since then. Regardless, there was not an explicit copyright stated, so I want to re-iterate that this is not my own work, but it didn't exist in Github, so I wanted to showcase it there so that you could browse the source code. In [the blog about its release](https://blogs.oracle.com/peopletools/psunit-unit-test-framework-for-peoplesoft), it is specified as "open source," which _probably_ means using it is safe. 😊
+The copyright for PSUnit is (probably) held by Jim Marion/David Bain of Oracle, although that was years ago, so it might have changed since then. Regardless, there was not an explicit copyright stated, so I want to re-iterate that this is not my own work, but it didn't exist in Github, so I wanted to showcase it there so that you could browse the source code and download the project xml. In [the blog about its release](https://blogs.oracle.com/peopletools/psunit-unit-test-framework-for-peoplesoft), it is specified as "open source," which _probably_ means using it is safe. 😊
 
 ## About PSUnit
 PSUnit is a PeopleSoft testing framework that is patterned after xUnit. It is intended to be a help for Test-Driven-Design, or TDD, which essentially means writing the tests before the code to ensure that your code is testable. Making testable code is always a good goal, because then a unit test (like PSUnit) can be run which will verify in a small amount of time that your code is likely working.
@@ -14,4 +14,47 @@ As mentioned before, PSUnit used to be an internal thing for PeopleSoft, but it 
 I have written a new `BaseTest` class, which slightly modifies the way that unit tests are run. This can be found under [Y_TEST:BaseTest](./Y_TEST/BaseTest.pcode). The delivered code can all be found under [TTS_UNITTEST](./TTS_UNITTEST). The custom modifications include the ability to count the number of assertions that were made, as well as a couple of additional methods that I thought might be helpful for test purposes. I have also modified a handful of the methods to take different actions that I thought were helpful.
 
 ## Usage
-To get PSUnit working in your PeopleSoft environment, you should download the [project file](http://blogs.oracle.com/peopletools/resource/TTS_UNIT.zip) that contains all of the project code (most of which is reflected here). You can register the `TTS_INTRACTV_TESTR` component under a menu of your choosing, or else the project file will contain a Content Reference for it.
+To get PSUnit working in your PeopleSoft environment, you should download the files in [TTS_UNIT](./TTS_UNIT) that contains the project TTS_UNIT (The code for the project is reflected here for convenience). To get it to work, you can register the `TTS_INTRACTV_TESTR` component under a menu of your choosing, or else the project file will contain a Content Reference for it (under Root, I think...).
+
+### Writing your class
+Once you have done that, you can go into the code for my [custom class](./Y_TEST/BaseTest.pcode) and copy the first bit of code, which is a template for new classes. For convenience, this is the code contained there:
+
+	/* Basic Test-Class structure 
+	import Y_TEST:BaseTest;
+
+	class Test-Class extends Y_TEST:BaseTest
+	   method Test-Class();
+	   method RunHook();
+	private
+	   rem tests;
+	end-class;
+
+	method Test-Class
+	   %Super = create Y_TEST:BaseTest("Test-Class");
+	end-method;
+
+	method RunHook
+	   /+ Extends/implements Y_TEST:BaseTest.Run +/
+	   <run test methods>
+	   %This.tests = <number-of-tests-run>;
+	end-method;
+	*/
+
+Replace `Test-Class` everywhere that it appears with the name of your test class. Put new test methods in the class definition (probable in the `private` section under `rem tests;`, and replace `<run test methods>` with calls to the methods you put there. Finally, if you want, you can replace `<number-of-tests-run>` in `%This.tests = <number-of-tests-run>;` with a number that indicates the actual number of methods that you want. This is used in the output for tests.
+
+### Adding your class to the Framework
+Once you have moved the project into the desired environment, navigate to the content reference. Once there, you can add a new test:
+
+![Adding a New Test](./meta/AddTest.PNG)
+
+Call it what you will. Then you will enter a landing page:
+
+![Landing Page](./meta/LandingPage.PNG)
+
+You can click the top tab that is called Add/Delete Tests. That will take you to this page:
+
+![Adding a New Test Class](./meta/AddClasses.PNG)
+
+Once you add the class you want, you can return to the landing page, check the test you want to run, and then run it:
+
+![Landing Page with Test to Run](./meta/RunnableTest.PNG)
