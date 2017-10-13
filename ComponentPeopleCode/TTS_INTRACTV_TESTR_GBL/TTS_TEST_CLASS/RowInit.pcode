@@ -1,0 +1,21 @@
+Local integer &first_colon, &second_colon, &third_colon;
+
+&inClass = TTS_TEST_CLASS.TTS_CLASS_NAME;
+
+If All(&inClass) Then
+   
+   
+   &first_colon = Find(":", &inClass);
+   &second_colon = Find(":", &inClass, &first_colon + 1);
+   &third_colon = Find(":", &inClass, &second_colon + 1);
+   
+   TTS_TEST_WRK.TTS_PKGROOT = Substring(&inClass, 1, &first_colon - 1);
+   If All(&third_colon) Then
+      TTS_TEST_WRK.TTS_PKGPATH = Substring(&inClass, &first_colon + 1, &third_colon - &first_colon - 1);
+      TTS_TEST_WRK.TTS_CLASSID = Substring(&inClass, &third_colon + 1, Len(&inClass) - &third_colon);
+   Else
+      TTS_TEST_WRK.TTS_PKGPATH = Substring(&inClass, &first_colon + 1, &second_colon - &first_colon - 1);
+      TTS_TEST_WRK.TTS_CLASSID = Substring(&inClass, &second_colon + 1, Len(&inClass) - &second_colon);
+   End-If;
+   
+End-If;

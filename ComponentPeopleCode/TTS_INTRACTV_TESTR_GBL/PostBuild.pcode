@@ -1,0 +1,8 @@
+import TTS_UNITTEST:*;
+
+Component TTS_UNITTEST:Controller &controller;
+Local Rowset &l0;
+
+&controller = create TTS_UNITTEST:Controller();
+&l0 = GetLevel0();
+&controller.DoPostBuild(&l0(1).GetRowset(Scroll.TTS_TEST_CLASS), &l0(1).TTS_TESTRUN_WRK);

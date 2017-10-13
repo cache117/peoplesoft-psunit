@@ -1,0 +1,12 @@
+If All(TTS_TEST_WRK.TTS_CLASSID) Then
+   &outClassPath = &outClassPath | TTS_TEST_WRK.TTS_PKGROOT;
+   If TTS_TEST_WRK.TTS_PKGPATH = ":" Then
+      &outClassPath = &outClassPath | TTS_TEST_WRK.TTS_PKGPATH;
+   Else
+      &outClassPath = &outClassPath | ":" | TTS_TEST_WRK.TTS_PKGPATH | ":";
+   End-If;
+   &outClassPath = &outClassPath | TTS_TEST_WRK.TTS_CLASSID;
+   TTS_TEST_CLASS.TTS_CLASS_NAME = &outClassPath;
+Else
+   TTS_TEST_CLASS.TTS_CLASS_NAME = "";
+End-If;

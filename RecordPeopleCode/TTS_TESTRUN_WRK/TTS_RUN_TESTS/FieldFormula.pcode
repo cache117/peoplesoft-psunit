@@ -1,0 +1,11 @@
+import TTS_UNITTEST:Constants;
+
+Global TTS_UNITTEST:Constants &tts_unittest_constants_singleton;
+
+Function GetConstants() Returns TTS_UNITTEST:Constants
+   If (None(&tts_unittest_constants_singleton)) Then
+      &tts_unittest_constants_singleton = create TTS_UNITTEST:Constants();
+   End-If;
+   Return &tts_unittest_constants_singleton;
+End-Function;
+
