@@ -13,8 +13,10 @@ As mentioned before, PSUnit used to be an internal thing for PeopleSoft, but it 
 ## Modifications
 I have written a new `BaseTest` class, which slightly modifies the way that unit tests are run. This can be found under [Y_TEST:BaseTest](./ApplicationPackagePeopleCode/Y_TEST/BaseTest.pcode). The delivered code can all be found under [TTS_UNITTEST](./ApplicationPackagePeopleCode/TTS_UNITTEST). The custom modifications include the ability to count the number of assertions that were made, as well as a couple of additional methods that I thought might be helpful for test purposes. I have also modified a handful of the methods to take different actions that I thought were helpful.
 
+Also included is a method that will allow you to run all of the tests in your test class automatically. For this to work, all of the desired test methods must start with `test`, have no parameters, and be declared as `public` or `protected` in the class. The `BaseTest` class will run all of the tests it can find.
+
 ## Usage
-To get PSUnit working in your PeopleSoft environment, you should download the files in [TTS_UNIT](./Project/TTS_UNIT) that contains the project TTS_UNIT (The code for the project is reflected here for convenience). To get it to work, you can register the `TTS_INTRACTV_TESTR` component under a menu of your choosing, or else the project file will contain a Content Reference for it (under Root, I think...).
+To get PSUnit working in your PeopleSoft environment, you should download the files in [TTS_UNIT](./Project/TTS_UNIT) that contains the project TTS_UNIT (The code for the project is reflected here for convenience). To get it to work, you can register the `TTS_INTRACTV_TESTR` component under a menu of your choosing, or else the project file will contain a Content Reference for it (under Root, I think...). The "TTS" code will be up to date, but if you plan on using my custom class to help you, I would then copy the code from github into app designer for [Y_TEST:BaseTest](./ApplicationPackagePeopleCode/Y_TEST/BaseTest.pcode).
 
 ### Writing your class
 Once you have done that, you can go into the code for my [custom class](./ApplicationPackagePeopleCode/Y_TEST/BaseTest.pcode) and copy the first bit of code, which is a template for new classes. For convenience, this is the code contained there:
@@ -25,8 +27,10 @@ Once you have done that, you can go into the code for my [custom class](./Applic
 	class Test-Class extends Y_TEST:BaseTest
 	   method Test-Class();
 	   method RunHook();
-	private
+	protected
 	   rem tests;
+	private
+	   rem helper methods;
 	end-class;
 
 	method Test-Class
@@ -35,8 +39,12 @@ Once you have done that, you can go into the code for my [custom class](./Applic
 
 	method RunHook
 	   /+ Extends/implements Y_TEST:BaseTest.Run +/
+	   rem either run manually;
 	   <run test methods>
 	   %This.tests = <number-of-tests-run>;
+	   
+	   rem or run automatically;
+           rem %This.runTestMethodsInClass(String(%this));
 	end-method;
 	*/
 
