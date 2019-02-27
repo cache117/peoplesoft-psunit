@@ -38,6 +38,7 @@ end-method;
 class BaseTest extends TTS_UNITTEST:TestBase
    method Run();
    method RunHook() abstract;
+   method TearDown();
    method BaseTest(&_unitTestName As string);
    
    method Fail(&failureReason As string);
@@ -79,10 +80,21 @@ end-method;
 
 method Run
    /+ Extends/implements TTS_UNITTEST:TestBase.Run +/
+   Local string &DB;
+   SQLExec("SELECT SYSTEMTYPE FROM PSOPTIONS", &DB);
+   If &DB = "PRD" Then
+      Error "This test can only be run in non-production";
+   End-If;
+   
    %This.RunHook();
    %This.Msg(%This.UnitTestName);
    %This.Msg("Tests Run: " | %This.tests | ", Total Test Cases Succeeded: " | %This.testCasesSucceeded | ", Total Test Cases Failed: " | %This.testCasesFailed);
    %This.Msg(%This.getfailureReasons());
+end-method;
+
+method TearDown
+   /+ Extends/implements TTS_UNITTEST:TestBase.Teardown +/
+   SQLExec("ROLLBACK");
 end-method;
 
 method testCaseSucceeded
