@@ -40,11 +40,11 @@ Once you have done that, you can go into the code for my [custom class](./Applic
 	method RunHook
 	   /+ Extends/implements Y_TEST:BaseTest.Run +/
 	   rem either run manually;
-	   <run test methods>
-	   %This.tests = <number-of-tests-run>;
+	   rem <run test methods>
+	   rem %This.tests = <number-of-tests-run>;
 	   
 	   rem or run automatically;
-           rem %This.runTestMethodsInClass(String(%this));
+	   rem %This.runTestMethodsInClass(String(%this));
 	end-method;
 	*/
 
