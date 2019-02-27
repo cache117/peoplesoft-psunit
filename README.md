@@ -48,7 +48,7 @@ Once you have done that, you can go into the code for my [custom class](./Applic
 	end-method;
 	*/
 
-Replace `Test-Class` everywhere that it appears with the name of your test class. Put new test methods in the class definition (probable in the `private` section under `rem tests;`, and replace `<run test methods>` with calls to the methods you put there. Finally, if you want, you can replace `<number-of-tests-run>` in `%This.tests = <number-of-tests-run>;` with a number that indicates the actual number of methods that you want. This is used in the output for tests.
+Replace `Test-Class` everywhere that it appears with the name of your test class. Put new test methods in the class definition (probable in the `protected` section under `rem tests;`, and replace `<run test methods>` with calls to the methods you put there. Finally, if you want, you can replace `<number-of-tests-run>` in `%This.tests = <number-of-tests-run>;` with a number that indicates the actual number of methods that you want. This is used in the output for tests.
 
 ### Adding your class to the Framework
 Once you have moved the project into the desired environment, navigate to the content reference. Once there, you can add a new test:
