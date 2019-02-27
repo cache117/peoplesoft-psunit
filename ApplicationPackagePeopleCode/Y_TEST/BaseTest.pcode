@@ -7,8 +7,10 @@ import Y_TEST:BaseTest;
 class Test-Class extends Y_TEST:BaseTest
    method Test-Class();
    method RunHook();
-private
+protected
    rem tests;
+private
+   rem helper methods;
 end-class;
 
 method Test-Class
@@ -16,9 +18,13 @@ method Test-Class
 end-method;
 
 method RunHook
-   /+ Extends/implements Y_TEST:BaseTest.Run +/
-   <run test methods>
-   %This.tests = <number-of-tests-run>;
+   /+ Extends/implements Y_TEST:BaseTest.RunHook +/
+   rem either run manually;
+   rem <run test methods>
+   rem %This.tests = <number-of-tests-run>;
+
+   rem or run automatically;
+   rem %This.runTestMethodsInClass(String(%this));
 end-method;
 */
 
@@ -33,23 +39,31 @@ class BaseTest extends TTS_UNITTEST:TestBase
    method Run();
    method RunHook() abstract;
    method BaseTest(&_unitTestName As string);
+   
    method Fail(&failureReason As string);
    method FailWithException(&exception As Exception);
    method Pass(&discardedReason As string);
+   
    method AssertTrue(&condition As boolean, &failureMessage As string);
    method AssertFalse(&condition As boolean, &failureMessage As string);
    method AssertExists(&value As any, &onFail As string);
+   method AssertEquals(&expected As any, &actual As any, &onFail As string);
+   method AssertNotEqual(&expected As any, &actual As any, &onFail As string);
    method AssertStringsEqual(&expected As string, &actual As string, &onFail As string);
    method AssertStringsDiffer(&expected As string, &actual As string, &onFail As string);
    method AssertNumbersEqual(&expected As number, &actual As number, &onFail As string);
    method AssertNumbersDiffer(&expected As number, &actual As number, &onFail As string);
    method AssertDatesEqual(&expected As date, &actual As date, &onFail As string);
    method AssertDatesDiffer(&expected As date, &actual As date, &onFail As string);
+   method AssertObjectsEqual(&expected As any, &actual As any, &onFail As string);
+   method AssertObjectsDiffer(&expected As any, &actual As any, &onFail As string)
 protected
    method testCaseSucceeded();
    method testCaseFailed(&reason As string);
    method testEquals(&first As any, &second As any, &useSimpleEquals As boolean) Returns boolean;
    method getfailureReasons() Returns string;
+   method runTestMethodsInClass(&classPath As string);
+   
    property number testCasesFailed;
    property number testCasesSucceeded;
    property number tests;
@@ -111,6 +125,34 @@ method testEquals
    End-If;
 end-method;
 
+method AssertObjectsEqual
+   /+ &expected as Any, +/
+   /+ &actual as Any, +/
+   /+ &onFail as String +/
+   If Not (&expected.equals(&actual)) Then
+      %This.testCaseFailed(&onFail);
+      
+      Local string &msg = &expected.toString() | " <> " | &actual.toString() | "! " | &onFail;
+      throw create TTS_UNITTEST:Exceptions:AssertFailed(&msg);
+   End-If;
+   
+   %This.testCaseSucceeded();
+end-method;
+
+method AssertObjectsDiffer
+   /+ &expected as Any, +/
+   /+ &actual as Any, +/
+   /+ &onFail as String +/
+   If (&expected.equals(&actual)) Then
+      %This.testCaseFailed(&onFail);
+      
+      Local string &msg = &expected.toString() | " = " | &actual.toString() | "! " | &onFail;
+      throw create TTS_UNITTEST:Exceptions:AssertFailed(&msg);
+   End-If;
+   
+   %This.testCaseSucceeded();
+end-method;
+
 /**
   * If the given condition is true, a test will succeed. Otherwise, it will fail with the given message.
   */
@@ -133,10 +175,60 @@ method AssertFalse
    %This.AssertTrue(( Not &condition), &failureMessage);
 end-method;
 
+/**
+  * A simple method to ensure that the given value exists.
+  * 
+  * @param &value the value to check existence of.
+  * @param &onFail the message to display if the value is empty.
+  */
 method AssertExists
    /+ &value as Any, +/
    /+ &onFail as String +/
    %This.AssertTrue(All(&value), &onFail);
+end-method;
+
+/**
+  * Determines if the given values are equal, using basic equality.
+  * 
+  * @param &expected the value you expect the actual to be.
+  * @param &actual the value you need to compare to the expected value.
+  * @param &onFail the message to display if the values are not equal.
+  * @throws TTS_UNITTEST:Exceptions:AssertFailed if the values were unequal.
+  */
+method AssertEquals
+   /+ &expected as Any, +/
+   /+ &actual as Any, +/
+   /+ &onFail as String +/
+   If (&expected <> &actual) Then
+      %This.testCaseFailed(&onFail);
+      
+      Local string &msg = &expected | " <> " | &actual | "! " | &onFail;
+      throw create TTS_UNITTEST:Exceptions:AssertFailed(&msg);
+   End-If;
+   
+   %This.testCaseSucceeded();
+end-method;
+
+/**
+  * Determines if the given values are equal, using basic equality.
+  * 
+  * @param &expected the value you expect the actual to NOT be.
+  * @param &actual the value you need to compare to the expected value.
+  * @param &onFail the message to display if the values are equal.
+  * @throws TTS_UNITTEST:Exceptions:AssertFailed if the values were equal.
+  */
+method AssertNotEqual
+   /+ &expected as Any, +/
+   /+ &actual as Any, +/
+   /+ &onFail as String +/
+   If (&expected = &actual) Then
+      %This.testCaseFailed(&onFail);
+      
+      Local string &msg = &expected | " = " | &actual | "! " | &onFail;
+      throw create TTS_UNITTEST:Exceptions:AssertFailed(&msg);
+   End-If;
+   
+   %This.testCaseSucceeded();
 end-method;
 
 method AssertStringsEqual
@@ -223,20 +315,61 @@ method AssertDatesDiffer
    end-try;
 end-method;
 
+/**
+  * Ensures that the test will fail, and it will output the given reason.
+  * 
+  * @param &failureReason the reason for the test failing.
+  */
 method Fail
    /+ &failureReason as String +/
    %This.testCaseFailed(&failureReason);
    throw create TTS_UNITTEST:Exceptions:AssertFailed(&failureReason);
 end-method;
 
+/**
+  * Ensures that the test will fail, and it will output the given exception's explanation.
+  * 
+  * @param &exception the exeception to include as the reason for failing.
+  */
 method FailWithException
    /+ &exception as Exception +/
    %This.testCaseFailed(&exception.ToString());
    throw create TTS_UNITTEST:Exceptions:AssertFailed("Exception: " | &exception.ToString());
 end-method;
 
+/**
+  * Increments the count of test cases that have succeeded.
+  *
+  * @param &discardedReason this parameter serves no purpose except readability in tests, so you can name specifically
+  *        what was being tested.
+  */
 method Pass
    /+ &discardedReason as String +/
    %This.testCaseSucceeded();
+end-method;
+
+/**
+  * Automatically runs all test methods in the given class. For a test to be run automatically with this method, 
+  * the method name must begin with "test" and must have no parameters.
+  *
+  * @param &classPath the class path of the class to run. This can be easily obtained by using String(%This);
+  */
+method runTestMethodsInClass
+   /+ &classPath as String +/
+   Local string &rawMethodString = %IntBroker.GetAppClassMethods(&classPath);
+   Local array of string &SplitArray = Split(&rawMethodString, ")");
+   Local integer &i;
+   Local integer &testsRun = 0;
+   For &i = 1 To &SplitArray.Len
+      Local array of string &SplitArray2 = Split(&SplitArray [&i], "(");
+      Local string &method_name = &SplitArray2 [1];
+      Local string &params = &SplitArray2 [2];
+      If Substring(&method_name, 1, 4) = "test" And
+            &params = ";V" Then
+         ObjectDoMethod(%This, &method_name);
+         &testsRun = &testsRun + 1;
+      End-If;
+   End-For;
+   %This.tests = &testsRun;
 end-method;
 
